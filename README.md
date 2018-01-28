@@ -1,2 +1,2 @@
 # myTensorFlowTest
-only for my test and study
+only for my testing and study
