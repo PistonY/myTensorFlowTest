@@ -1,19 +1,19 @@
 import tensorflow as tf
 import proc_input
-import tf_F1
+import get_F1
 #import matplotlib.pyplot as plt
 import numpy as np
 
 
 batch_size = 2000
-X, Y = proc_input.input_pipeline(['tarin_data.csv'], batch_size)
+X, Y = proc_input.input_pipeline(['MN_data.csv'], batch_size)
 x_cv, y_cv = proc_input.input_pipeline(['cross_data.csv'], batch_size)
 x_test, y_test = proc_input.input_pipeline(['test_data.csv'], batch_size)
 
 W = tf.Variable(tf.zeros([X.shape[1].value, 1], name='weight'))
 b = tf.Variable([0.], name='bias')
 
-alpha = 1e-34
+alpha = 0.01
 lam = 1
 
 hyp = tf.sigmoid(tf.matmul(X, W) + b)
@@ -29,7 +29,7 @@ optimizer = tf.train.GradientDescentOptimizer(alpha).minimize(loss)
 base = 0.5
 #转化成0or1
 y_pred = tf.cast(tf.greater_equal(hyp, base), tf.float32)
-accuracy , F1 = tf_F1.tf_F1_score(Y, y_pred)
+accuracy , F1 = get_F1.tf_F1_score(Y, y_pred)
 
 init_op = tf.global_variables_initializer()
 local_init_op = tf.local_variables_initializer()

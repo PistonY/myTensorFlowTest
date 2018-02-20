@@ -1,17 +1,17 @@
 import matplotlib.pyplot as plt
 import csv
 
-with open('tarin_data.csv', 'r') as fin:
+with open('MN_data.csv', 'r') as fin:
     reader = csv.reader(fin)
     i = 0
     for line in reader:
         flg = ''
-        if line[2] == '0':
-            flg = 'bo'
+        if float(line[2]) == 0.:
+            flg = 'b.'
         else:
-            flg = 'ro'
+            flg = 'r.'
         plt.plot([line[0]], [line[1]], flg)
         i = i + 1
-        if i == 5000:
+        if i == 2000:
             break
     plt.show()
