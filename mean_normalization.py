@@ -1,51 +1,58 @@
 import csv
 
-def get_line_num(file_path):
+# 特征缩放
+
+def get_row_col_num(file_path):
     with open(file_path, 'r') as fin:
-        line_num = len(fin.readlines())
-    return line_num
+        row_num = len(fin.readlines())
+    with open(file_path, 'r') as fin:
+        reader = csv.reader(fin)
+        col_num = len(next(reader))
+    return row_num, col_num
+
 
 def get_mu_S(file_path):
     with open(file_path, 'r') as fin:
-
-        mu = [0., 0.]
-        S = [0., 0.]
-        max_V = [0., 0.]
-        min_V = [100., 100.]
-        sum_V = [0., 0.]
         reader = csv.reader(fin)
-        line_num = get_line_num(file_path)
+        line_num, col_num = get_row_col_num(file_path)
+        mu = [0. for _ in range(col_num)]
+        S = [0. for _ in range(col_num)]
+        max_V = [0. for _ in range(col_num)]
+        min_V = [10000000. for _ in range(col_num)]
+        sum_V = [0. for _ in range(col_num)]
 
         for line in reader:
-            f_0 = float(line[0])
-            f_1 = float(line[1])
-            # print(line[0], line[1])
-            sum_V[0], sum_V[1] = sum_V[0] + f_0, sum_V[1] + f_1
-
-            if f_0 < min_V[0]:
-                min_V[0] = f_0
-            if f_1 < min_V[1]:
-                min_V[1] = f_1
-            if f_0 > max_V[0]:
-                max_V[0] = f_0
-            if f_1 > max_V[1]:
-                max_V[1] = f_1
-        mu[0], mu[1] = sum_V[0] / line_num, sum_V[1] / line_num
-        S[0], S[1] = max_V[0] - min_V[0], max_V[1] - min_V[1]
+            for i in range(col_num):
+                f_i = float(line[i])
+                sum_V[i] = sum_V[i] + f_i
+                if f_i < min_V[i]:
+                    min_V[i] = f_i
+                if f_i > max_V[i]:
+                    max_V[i] = f_i
+        for i in range(col_num):
+            mu[i] = sum_V[i] / line_num
+            S[i] = max_V[i] - min_V[i]
+            # if S[i] == 0.:
+            #     print(i, col_num)
         # print(mu, S)
         return mu, S
 
-file_path = 'tarin_data.csv'
+
+file_path = '2nd-process/instance.csv'
 mu, S = get_mu_S(file_path)
 with open(file_path, 'r') as fin:
-    with open('MN_data.csv', 'w', newline='') as fout:
+    _, col_num = get_row_col_num(file_path)
+    with open('2nd-process/MN_data.csv', 'w', newline='') as fout:
         reader = csv.reader(fin)
         writer = csv.writer(fout)
         for row in reader:
             ps_data = []
-            ps_data.append((float(row[0]) - mu[0]) / S[0])
-            ps_data.append((float(row[1]) - mu[1]) / S[1])
-            ps_data.append(float(row[2]))
+            ps_data.append(float(row[0]))
+            for i in range(col_num - 1):
+                if i == 0:
+                    continue
+                ps_data.append((float(row[i]) - mu[i]) / S[i])
+            ps_data.append(float(row[col_num - 1]))
             writer.writerow(ps_data)
 
 

@@ -1,22 +1,19 @@
 import tensorflow as tf
 
-def set_pdynome_degree(degree, X1, X2):
-    lis = []
-    for i in range(1, degree + 1):
-        for j in range(i + 1):
-            lis.append(pow(X1, i-j) * pow(X2, j))
-    return lis
-
-
+# 数据读取
+# 数据tensor化
 
 def read_my_file_format(filename_queue):
     reader = tf.TextLineReader()
     key, record_string = reader.read(filename_queue)
-    defaults = [[0.], [10000.], [0.]]
-    col1, col2, col3 = tf.decode_csv(record_string, record_defaults=defaults)
-    features = tf.stack([col1, col2])
-    lable = tf.stack([col3])
+    defaults = [[0.], [1.], [10.], [0.]]
+    col1, col2, col3, col4 = tf.decode_csv(record_string, record_defaults=defaults)
+    features = tf.stack([col1, col2, col3])
+    # features = tf.stack(set_pdynome_degree(3, [col1, col2, col3]))
+    features = tf.reshape(features, [-1, 1])
+    lable = tf.stack([col4])
     return features, lable
+
 
 def input_pipeline(filenames, batch_size, num_epochs = None):
     filename_queue = tf.train.string_input_producer(filenames, num_epochs=num_epochs, shuffle=True)
