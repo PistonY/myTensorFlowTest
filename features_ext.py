@@ -258,48 +258,155 @@ o_mr.fillna(value=0., inplace=True)
 
 o_mr.to_csv('data/on_feature1.csv',index=None)
 # 商家相关的特征
+#['user_id','merchant_id','coupon_id','discount_rate','distance','date_received','date']
+# 商家优惠券被领取次数c1
+m1 = feature1[feature1.coupon_id != 'null']
+m1['merchant_got'] = 1
+m1 = m1.groupby('merchant_id')['merchant_got'].agg('sum').reset_index()
+
+# 商家优惠券被领取后不核销次数c2
+m2 = feature1[(feature1.coupon_id != 'null')&(feature1.date == 'null')]
+m2['merchant_got_not_use'] = 1
+m2 = m2.groupby('merchant_id')['merchant_got_not_use'].agg('sum').reset_index()
+
+# 商家优惠券被领取后核销次数c3
+m3 = feature1[(feature1.coupon_id != 'null')&(feature1.date != 'null')]
+m3['merchant_got_and_use'] = 1
+m3 = m3.groupby('merchant_id')['merchant_got_and_use'].agg('sum').reset_index()
+
+# 商家优惠券被领取后核销率c4
+m4 = pd.merge(m1, m3, on=['merchant_id'])
+m4.fillna(value=0., inplace=True)
+m4['merchant_got_and_use_rate'] = m4.apply(lambda x: x.merchant_got_and_use / x.merchant_got, axis=1)
+m4 = m4[['merchant_id', 'merchant_got_and_use_rate']]
+
+# 商家优惠券核销的平均/最小/最大消费折率c5
+m5 = feature1[(feature1.coupon_id != 'null')&(feature1.date != 'null')]
+m5.discount_rate = m5.discount_rate.apply(get_discount_rate)
+m5 = m5.groupby('merchant_id')['discount_rate'].apply(lambda x: ':'.join(x)).reset_index()
+m5['merchant_max_disc_rate'] = m5.discount_rate.apply(lambda x: max([float (d) for d in x.split(':')]))
+m5['merchant_min_disc_rate'] = m5.discount_rate.apply(lambda x: min([float (d) for d in x.split(':')]))
+m5['merchant_mean_disc_rate'] = m5.discount_rate.apply(lambda x: sum([float (d) for d in x.split(':')]) / len(x.split(':')))
+m5 = m5[['merchant_id', 'merchant_max_disc_rate', 'merchant_min_disc_rate', 'merchant_mean_disc_rate']]
+
+# 核销商家优惠券的不同用户数量，及其占领取不同的用户比重m6
+mt1 = feature1[(feature1.coupon_id != 'null')&(feature1.date != 'null')]
+mt1['merchant_difft_user_use_num'] = 1
+mt1 = mt1.groupby(['user_id', 'merchant_id'])['merchant_difft_user_use_num'].agg('sum').reset_index()
+mt1['merchant_difft_user_use_num'] = 1
+mt1 = mt1.groupby('merchant_id')['merchant_difft_user_use_num'].agg('sum').reset_index()
+
+mt2 = feature1[(feature1.coupon_id != 'null')]
+mt2['merchant_difft_user_get_num'] = 1
+mt2 = mt2.groupby(['user_id', 'merchant_id'])['merchant_difft_user_get_num'].agg('sum').reset_index()
+mt2['merchant_difft_user_get_num'] = 1
+mt2 = mt2.groupby('merchant_id')['merchant_difft_user_get_num'].agg('sum').reset_index()
+
+m6 = pd.merge(mt2, mt1, on=['merchant_id'])
+m6.fillna(value=0, inplace=True)
+m6['merchant_difft_user_use_rate'] = m6.apply(lambda x: x.merchant_difft_user_use_num / x.merchant_difft_user_get_num, axis=1)
+m6 = m6[['merchant_id', 'merchant_difft_user_use_rate']]
+
+# 商家优惠券平均每个用户核销多少张m7
+m7 = feature1[(feature1.coupon_id != 'null')&(feature1.date != 'null')]
+m7['merchant_difft_user_use_num'] = 1
+m7 = m7.groupby(['user_id', 'merchant_id'])['merchant_difft_user_use_num'].agg('sum').reset_index()
+m7['merchant_difft_user_use_num'] = m7['merchant_difft_user_use_num'].astype('str')
+m7 = m7.groupby('merchant_id')['merchant_difft_user_use_num'].agg(lambda x: ':'.join(x)).reset_index()
+m7['ave_user_use_merchant_coupon'] = m7.merchant_difft_user_use_num.apply(lambda x: sum([int(d) for d in x.split(':')]) / len(x.split(':')))
+m7 = m7[['merchant_id', 'ave_user_use_merchant_coupon']]
+
+# 商家被核销过的不同优惠券数量m8
+m8 = feature1[(feature1.coupon_id != 'null')&(feature1.date != 'null')]
+m8['merchant_difft_coupon_used'] = 1
+m8 = m8.groupby(['merchant_id', 'coupon_id'])['merchant_difft_coupon_used'].agg('sum').reset_index()
+m8['merchant_difft_coupon_used'] = 1
+m8 = m8.groupby('merchant_id')['merchant_difft_coupon_used'].agg('sum').reset_index()
+
+
+# 商家被核销过的不同优惠券数量占所有领取过的不同优惠券数量的比重m9
+mt2 = feature1[(feature1.coupon_id != 'null')]
+mt2['merchant_difft_coupon_got'] = 1
+mt2 = mt2.groupby(['merchant_id', 'coupon_id'])['merchant_difft_coupon_got'].agg('sum').reset_index()
+mt2['merchant_difft_coupon_got'] = 1
+mt2 = mt2.groupby('merchant_id')['merchant_difft_coupon_got'].agg('sum').reset_index()
+
+m9 = pd.merge(mt2, m8, on=['merchant_id'])
+m9.fillna(value=0, inplace=True)
+m9['merchant_difft_coupon_rate'] = m9.apply(lambda x: x.merchant_difft_coupon_used / x.merchant_difft_coupon_got, axis=1)
+m9 = m9[['merchant_id', 'merchant_difft_coupon_rate']]
+
+# 商家平均每种优惠券核销多少张m10
+m10 = feature1[(feature1.coupon_id != 'null')&(feature1.date != 'null')]
+m10['merchant_difft_coupon_was_used'] = 1
+m10 = m10.groupby(['merchant_id', 'coupon_id'])['merchant_difft_coupon_was_used'].agg('sum').reset_index()
+m10.merchant_difft_coupon_was_used = m10['merchant_difft_coupon_was_used'].astype('str')
+m10 = m10.groupby('merchant_id')['merchant_difft_coupon_was_used'].agg(lambda x: ':'.join(x)).reset_index()
+m10['merchant_avg_difft_coupon_was_used'] = m10.merchant_difft_coupon_was_used.apply(lambda x: sum(int(d) for d in x.split(':')) / len(x.split(':')))
+m10 = m10[['merchant_id', 'merchant_avg_difft_coupon_was_used']]
+
+# 商家被核销优惠券的平均时间率m11
+m11 = feature1[(feature1.coupon_id != 'null')&(feature1.date != 'null')]
+m11['merchant_coupon_use_gap_time'] = m11.apply(lambda x: str(int(x.date) - int(x.date_received)), axis=1)
+m11 = m11.groupby('merchant_id')['merchant_coupon_use_gap_time'].agg(lambda x: ':'.join(x)).reset_index()
+m11['merchant_coupon_avg_use_gap_time'] = m11.merchant_coupon_use_gap_time.apply(lambda x: sum([int(d) for d in x.split(':')]) / len(x.split(':')))
+m11 = m11[['merchant_id', 'merchant_coupon_avg_use_gap_time']]
+
+# 商家被核销优惠券中的平均/最小/最大用户-商家距离m12
+m12 = feature1[(feature1.coupon_id != 'null')&(feature1.date != 'null')]
+m12 = m12[['merchant_id', 'distance']]
+m12['distance'] = m12['distance'].replace('null', '0')
+m12 = m12.groupby('merchant_id')['distance'].agg(lambda x: ':'.join(x)).reset_index()
+m12['merchant_coupon_max_distance'] = m12.distance.apply(lambda x: max([float (d) for d in x.split(':')]))
+m12['merchant_coupon_min_distance'] = m12.distance.apply(lambda x: min([float (d) for d in x.split(':')]))
+m12['merchant_coupon_mean_distance'] = m12.distance.apply(lambda x: sum([float (d) for d in x.split(':')]) / len(x.split(':')))
+m12 = m12[['merchant_id', 'merchant_coupon_max_distance', 'merchant_coupon_min_distance', 'merchant_coupon_mean_distance']]
+
+
+m_mr = feature1[['merchant_id']]
+m_mr = m_mr['merchant_id'].drop_duplicates().reset_index()[['merchant_id']]
+m_mr = pd.merge(m_mr, m1, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m2, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m3, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m4, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m5, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m6, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m7, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m8, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m9, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m10, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m11, on=['merchant_id'])
+m_mr = pd.merge(m_mr, m12, on=['merchant_id'])
+
+m_mr.fillna(value=0., inplace=True)
+
+m_mr.to_csv('data/merchant_feature1.csv',index=None)
+# 用户-商家交互特征um
 #
-# 商家优惠券被领取次数
-
-# 商家优惠券被领取后不核销次数
-# 商家优惠券被领取后核销次数
-# 商家优惠券被领取后核销率
-# 商家优惠券核销的平均/最小/最大消费折率
-# 核销商家优惠券的不同用户数量，及其占领取不同的用户比重
-# 商家优惠券平均每个用户核销多少张
-# 商家被核销过的不同优惠券数量
-# 商家被核销过的不同优惠券数量占所有领取过的不同优惠券数量的比重
-# 商家平均每种优惠券核销多少张
-# 商家被核销优惠券的平均时间率
-# 商家被核销优惠券中的平均/最小/最大用户-商家距离
+# 用户领取商家的优惠券次数um1
+# 用户领取商家的优惠券后不核销次数um2
+# 用户领取商家的优惠券后核销次数um3
+# 用户领取商家的优惠券后核销率um4
+# 用户对每个商家的不核销次数占用户总的不核销次数的比重um5
+# 用户对每个商家的优惠券核销次数占用户总的核销次数的比重um6
+# 用户对每个商家的不核销次数占商家总的不核销次数的比重um7
+# 用户对每个商家的优惠券核销次数占商家总的核销次数的比重um8
 
 
-# 用户-商家交互特征
+# 优惠券相关的特征c
 #
-# 用户领取商家的优惠券次数
-# 用户领取商家的优惠券后不核销次数
-# 用户领取商家的优惠券后核销次数
-# 用户领取商家的优惠券后核销率
-# 用户对每个商家的不核销次数占用户总的不核销次数的比重
-# 用户对每个商家的优惠券核销次数占用户总的核销次数的比重
-# 用户对每个商家的不核销次数占商家总的不核销次数的比重
-# 用户对每个商家的优惠券核销次数占商家总的核销次数的比重
-
-
-# 优惠券相关的特征
-#
-# 优惠券类型(直接优惠为0, 满减为1)
-# 优惠券折率
-# 满减优惠券的最低消费
-# 历史出现次数
-# 历史核销次数
-# 历史核销率
-# 历史核销时间率
-# 领取优惠券是一周的第几天
-# 领取优惠券是一月的第几天
-# 历史上用户领取该优惠券次数
-# 历史上用户消费该优惠券次数
-# 历史上用户对该优惠券的核销率
+# 优惠券类型(直接优惠为0, 满减为1)c1
+# 优惠券折率c2
+# 满减优惠券的最低消费c3
+# 历史出现次数c4
+# 历史核销次数c5
+# 历史核销率c6
+# 历史核销时间率c7
+# 领取优惠券是一周的第几天c8
+# 领取优惠券是一月的第几天c9
+# 历史上用户领取该优惠券次数c10
+# 历史上用户消费该优惠券次数c11
+# 历史上用户对该优惠券的核销率c12
 
 
 # 其它特征
