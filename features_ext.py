@@ -18,7 +18,7 @@ feature2 = (off_train.date >= '20160201')&(off_train.date <= '20160514')|((off_t
 test2 = (off_train.date_received >= '20160515')&(off_train.date_received <= '20160615')
 
 feature3 = on_train[(on_train.date >= '20160101')&(on_train.date <= '20160413')|((on_train.date == 'null')&(on_train.date_received >= '20160101')&(on_train.date_received <= '20160413'))]
-test1 = on_train[(on_train.date_received >= '20160414')&(on_train.date_received <= '20160514')]
+test3 = on_train[(on_train.date_received >= '20160414')&(on_train.date_received <= '20160514')]
 
 # 用户线下相关的特征u
 #
@@ -155,24 +155,112 @@ u_mr = pd.merge(u_mr, u11, on=['user_id'])
 u_mr.fillna(value=0., inplace=True)
 
 u_mr.to_csv('data/off_feature1.csv',index=None)
-# 用户线上相关的特征u12
+# 用户线上相关的特征o
 
-# 用户线上操作次数
+# 用户线上操作次数o1
+o1 = feature3.apply(lambda x:x)
+o1['user_online_action_num'] = 1
+o1 = o1.groupby('user_id')['user_online_action_num'].agg('sum').reset_index()
 
-# 用户线上点击率
-# 用户线上购买率
-# 用户线上领取率
-# 用户线上不消费次数
-# 用户线上优惠券核销次数
-# 用户线上优惠券核销率
-# 用户线下不消费次数占线上线下总的不消费次数的比重
-# 用户线下的优惠券核销次数占线上线下总的优惠券核销次数的比重
-# 用户线下领取的记录数量占总的记录数量的比重
+# 用户线上点击率o2
+o2 = feature3.apply(lambda x:x)
+o2['action'] = o2['action'].astype('str')
+o2 = o2.groupby('user_id')['action'].agg(lambda x: ':'.join(x)).reset_index()
 
 
+def get_action_rate(t):
+    l = [int(d) for d in t.split(':')]
+    return (l.count(0) + l.count(2)) / len(l)
+
+
+def get_buy_rate(t):
+    l = [int(d) for d in t.split(':')]
+    return (l.count(1)) / len(l)
+
+
+def get_coupon_rate(t):
+    l = [int(d) for d in t.split(':')]
+    return (l.count(2)) / len(l)
+
+
+o2['action_rate'] = o2.action.apply(get_action_rate)
+# 用户线上购买率o3
+o2['buy_rate'] = o2.action.apply(get_buy_rate)
+# 用户线上领取率o4
+o2['coupon_rate'] = o2.action.apply(get_coupon_rate)
+
+# 用户线上不消费次数o5
+def get_not_buy(t):
+    l = [int(d) for d in t.split(':')]
+    return l.count(0) + l.count(2)
+
+
+o2['user_not_buy_num'] = o2.action.apply(get_not_buy)
+
+# 用户线上优惠券核销次数o6
+def get_buy_num(t):
+    l = [int(d) for d in t.split(':')]
+    return l.count(1)
+
+
+o2['user_buy_num'] = o2.action.apply(get_buy_num)
+
+
+# 用户线上优惠券核销率o7
+ot1 = feature3[(feature3.date != 'null')&(feature3.coupon_id != 'null')]
+ot1['user_use_coupon_num'] = 1
+ot1 = ot1.groupby('user_id')['user_use_coupon_num'].agg('sum').reset_index()
+
+ot2 = feature3[feature3.coupon_id != 'null']
+ot2['user_get_coupon'] = 1
+ot2 = ot2.groupby('user_id')['user_get_coupon'].agg('sum').reset_index()
+
+o7 = pd.merge(ot2, ot1, on=['user_id'], how='left')
+o7.fillna(value=0., inplace=True)
+o7['on_user_use_coupon_rate'] = o7.apply(lambda x: x.user_use_coupon_num / x.user_get_coupon, axis=1)
+o7 = o7[['user_id', 'on_user_use_coupon_rate']]
+
+# 用户线下不消费次数占线上线下总的不消费次数的比重o8
+ot3 = o2[['user_id', 'user_not_buy_num']]
+o8 = pd.merge(u2, ot3, on=['user_id'], how='left')
+o8.fillna(value=0., inplace=True)
+o8['off_not_buy_div_all_not_buy'] = o8.apply(lambda x: x.user_received_not_use / (x.user_received_not_use + x.user_not_buy_num), axis=1)
+o8 = o8[['user_id', 'off_not_buy_div_all_not_buy']]
+
+# 用户线下的优惠券核销次数占线上线下总的优惠券核销次数的比重o9
+ot4 = o2[['user_id', 'user_buy_num']]
+o9 = pd.merge(u3, ot4, on=['user_id'], how='left')
+o9.fillna(value=0., inplace=True)
+o9['off_buy_div_all_buy'] = o9.apply(lambda x: x.user_use_coupon / (x.user_use_coupon + x.user_buy_num), axis=1)
+o9 = o9[['user_id', 'off_buy_div_all_buy']]
+
+# 用户线下领取的记录数量占总的记录数量的比重o10
+ot5 = o2[['user_id', 'action']]
+ot5['on_get_coupon_num'] = ot5.action.apply(lambda x: [int(d) for d in x.split(':')].count(2))
+ot5 = ot5[['user_id', 'on_get_coupon_num']]
+o10 = pd.merge(u1, ot5, on=['user_id'], how='left')
+o10.fillna(value=0., inplace=True)
+o10['off_get_div_all_get'] = o10.apply(lambda x: x.user_get_coupon_num / (x.user_get_coupon_num + x.on_get_coupon_num), axis=1)
+o10 = o10[['user_id', 'off_get_div_all_get']]
+
+o2 = o2[['user_id', 'action_rate', 'buy_rate', 'coupon_rate', 'user_not_buy_num', 'user_buy_num']]
+
+
+o_mr = feature3[['user_id']]
+o_mr = o_mr['user_id'].drop_duplicates().reset_index()[['user_id']]
+o_mr = pd.merge(o_mr, o1, on=['user_id'])
+o_mr = pd.merge(o_mr, o2, on=['user_id'])
+o_mr = pd.merge(o_mr, o7, on=['user_id'])
+o_mr = pd.merge(o_mr, o8, on=['user_id'])
+o_mr = pd.merge(o_mr, o9, on=['user_id'])
+o_mr = pd.merge(o_mr, o10, on=['user_id'])
+o_mr.fillna(value=0., inplace=True)
+
+o_mr.to_csv('data/on_feature1.csv',index=None)
 # 商家相关的特征
 #
 # 商家优惠券被领取次数
+
 # 商家优惠券被领取后不核销次数
 # 商家优惠券被领取后核销次数
 # 商家优惠券被领取后核销率
