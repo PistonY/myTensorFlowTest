@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 
-off_train = pd.read_csv(r'C:\Users\soulf\PycharmProjects\TC-data\o2o\ccf_offline_stage1_train\ccf_offline_stage1_train.csv', header=0, keep_default_na=False)
+off_train = pd.read_csv(r'C:\Users\soulf\PycharmProjects\TC-data1\o2o\ccf_offline_stage1_train\ccf_offline_stage1_train.csv', header=0, keep_default_na=False)
 off_train.columns=['user_id','merchant_id','coupon_id','discount_rate','distance','date_received','date']
 
-off_test = pd.read_csv(r'C:\Users\soulf\PycharmProjects\TC-data\o2o\ccf_offline_stage1_test_revised.csv',header=0, keep_default_na=False)
+off_test = pd.read_csv(r'C:\Users\soulf\PycharmProjects\TC-data1\o2o\ccf_offline_stage1_test_revised.csv',header=0, keep_default_na=False)
 off_test.columns = ['user_id','merchant_id','coupon_id','discount_rate','distance','date_received']
 
-# on_train = pd.read_csv(r'C:\Users\soulf\PycharmProjects\TC-data\o2o\ccf_online_stage1_train\ccf_online_stage1_train.csv', header=0, keep_default_na=False)
+# on_train = pd.read_csv(r'C:\Users\soulf\PycharmProjects\TC-data1\o2o\ccf_online_stage1_train\ccf_online_stage1_train.csv', header=0, keep_default_na=False)
 # on_train.columns = ['user_id','merchant_id','action','coupon_id','discount_rate','date_received','date']
 
 

@@ -20,43 +20,51 @@ f2 = f2.sample(samp)
 f3 = f1[f1.lable == 0]
 f3 = f3.sample(8 * samp)
 
+#特征读取
+coupon_fea = pd.read_csv('data1/coupon_feature1.csv', header=0)
+merchant_fea = pd.read_csv('data1/merchant_feature1.csv', header=0)
+user_off_fea = pd.read_csv('data1/off_feature1.csv', header=0)
+user_on_fea = pd.read_csv('data1/on_feature1.csv', header=0)
+user_coupon_fea = pd.read_csv('data1/user_coupon_feature1.csv', header=0)
+user_merchant_fea = pd.read_csv('data1/user_merchant_feature1.csv', header=0)
+
 
 #融合样本
-coupon_fea = pd.read_csv('data/coupon_feature1.csv', header=0)
+# coupon_fea = pd.read_csv('data1/coupon_feature1.csv', header=0)
 coupon_fea['coupon_id'] = coupon_fea['coupon_id'].astype('str')
 
 t_model_merge = pd.merge(f2, coupon_fea, on=['coupon_id'], how='left')
 f_model_merge = pd.merge(f3, coupon_fea, on=['coupon_id'], how='left')
 
-merchant_fea = pd.read_csv('data/merchant_feature1.csv', header=0)
+# merchant_fea = pd.read_csv('data1/merchant_feature1.csv', header=0)
 
 t_model_merge = pd.merge(t_model_merge, merchant_fea, on=['merchant_id'], how='left')
 f_model_merge = pd.merge(f_model_merge, merchant_fea, on=['merchant_id'], how='left')
 
-user_off_fea = pd.read_csv('data/off_feature1.csv', header=0)
+# user_off_fea = pd.read_csv('data1/off_feature1.csv', header=0)
 
 t_model_merge = pd.merge(t_model_merge, user_off_fea, on=['user_id'], how='left')
 f_model_merge = pd.merge(f_model_merge, user_off_fea, on=['user_id'], how='left')
 
-user_on_fea = pd.read_csv('data/on_feature1.csv', header=0)
+# user_on_fea = pd.read_csv('data1/on_feature1.csv', header=0)
 
 t_model_merge = pd.merge(t_model_merge, user_on_fea, on=['user_id'], how='left')
 f_model_merge = pd.merge(f_model_merge, user_on_fea, on=['user_id'], how='left')
 
-other_fea = pd.read_csv('data/other_feature1.csv', header=0)
+other_fea = pd.read_csv('data1/other_feature1.csv', header=0)
 other_fea['coupon_id'] = other_fea['coupon_id'].astype('str')
 other_fea = other_fea.drop(['date_received'], axis=1)
 
 t_model_merge = pd.merge(t_model_merge, other_fea, on=['user_id', 'coupon_id'], how='left')
 f_model_merge = pd.merge(f_model_merge, other_fea, on=['user_id', 'coupon_id'], how='left')
 
-user_coupon_fea = pd.read_csv('data/user_coupon_feature1.csv', header=0)
+# user_coupon_fea = pd.read_csv('data1/user_coupon_feature1.csv', header=0)
 user_coupon_fea['coupon_id'] = user_coupon_fea['coupon_id'].astype('str')
 
 t_model_merge = pd.merge(t_model_merge, user_coupon_fea, on=['user_id', 'coupon_id'], how='left')
 f_model_merge = pd.merge(f_model_merge, user_coupon_fea, on=['user_id', 'coupon_id'], how='left')
 
-user_merchant_fea = pd.read_csv('data/user_merchant_feature1.csv', header=0)
+# user_merchant_fea = pd.read_csv('data1/user_merchant_feature1.csv', header=0)
 
 t_model_merge = pd.merge(t_model_merge, user_merchant_fea, on=['user_id', 'merchant_id'], how='left')
 f_model_merge = pd.merge(f_model_merge, user_merchant_fea, on=['user_id', 'merchant_id'], how='left')
@@ -74,4 +82,4 @@ f_model_merge.fillna(value=-1., inplace=True)
 
 model_merge = pd.concat([t_model_merge, f_model_merge])
 model_merge = model_merge.sample(frac=1)
-model_merge.to_csv('train_data/model_merge1.csv',index=None, header=None)
+model_merge.to_csv('train_data/model_merge1.csv',index=None)

@@ -4,7 +4,7 @@ from datetime import date
 import datetime as dt
 
 
-off_test = pd.read_csv(r'C:\Users\soulf\PycharmProjects\TC-data\o2o\ccf_offline_stage1_test_revised.csv',header=0)
+off_test = pd.read_csv(r'C:\Users\soulf\PycharmProjects\TC-data1\o2o\ccf_offline_stage1_test_revised.csv',header=0)
 off_test.columns = ['user_id','merchant_id','coupon_id','discount_rate','distance','date_received']
 
 
@@ -138,5 +138,5 @@ other_feature3 = pd.merge(other_feature3,t3,on=['user_id','coupon_id'])
 other_feature3 = pd.merge(other_feature3,t4,on=['user_id','date_received'])
 other_feature3 = pd.merge(other_feature3,t5,on=['user_id','coupon_id','date_received'])
 other_feature3 = pd.merge(other_feature3,t7,on=['user_id','coupon_id','date_received'])
-other_feature3.to_csv('data/other_feature1.csv',index=None)
+other_feature3.to_csv('data1/other_feature1.csv',index=None)
 #print(other_feature3)
