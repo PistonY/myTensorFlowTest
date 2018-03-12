@@ -40,7 +40,7 @@ u3 = u3.groupby('user_id')['user_use_coupon'].agg('sum').reset_index()
 
 # 用户领取优惠券后进行核销率u4
 u4 = pd.merge(u2, u3, on=['user_id'], how='left')
-u4.fillna(value = -1, inplace=True)
+u4.fillna(value = 0, inplace=True)
 u4['use_num_divide_not_use_num'] = u4.apply(lambda x: int(x.user_use_coupon)/x.user_received_not_use, axis=1)
 u4 = u4[['user_id', 'use_num_divide_not_use_num']]
 
@@ -83,7 +83,7 @@ u5 = u5[['user_id', '200_500_use_rate']]
 
 # 用户核销满200~500减的优惠券占所有核销优惠券的比重u6
 u6 = pd.merge(u3, ut2, on=['user_id'], how='left')
-u6.fillna(value=-1., inplace=True)
+u6.fillna(value=0., inplace=True)
 u6['200_500_use_all_rate'] = u6.apply(lambda x: x.twoH_fiveH_use / x.user_use_coupon, axis=1)
 u6 = u6[['user_id', '200_500_use_all_rate']]
 
@@ -217,21 +217,21 @@ ot2['user_get_coupon'] = 1
 ot2 = ot2.groupby('user_id')['user_get_coupon'].agg('sum').reset_index()
 
 o7 = pd.merge(ot2, ot1, on=['user_id'], how='left')
-o7.fillna(value=-1., inplace=True)
+o7.fillna(value=0., inplace=True)
 o7['on_user_use_coupon_rate'] = o7.apply(lambda x: x.user_use_coupon_num / x.user_get_coupon, axis=1)
 o7 = o7[['user_id', 'on_user_use_coupon_rate']]
 
 # 用户线下不消费次数占线上线下总的不消费次数的比重o8
 ot3 = o2[['user_id', 'user_not_buy_num']]
 o8 = pd.merge(u2, ot3, on=['user_id'], how='left')
-o8.fillna(value=-1., inplace=True)
+o8.fillna(value=0., inplace=True)
 o8['off_not_buy_div_all_not_buy'] = o8.apply(lambda x: x.user_received_not_use / (x.user_received_not_use + x.user_not_buy_num), axis=1)
 o8 = o8[['user_id', 'off_not_buy_div_all_not_buy']]
 
 # 用户线下的优惠券核销次数占线上线下总的优惠券核销次数的比重o9
 ot4 = o2[['user_id', 'user_buy_num']]
 o9 = pd.merge(u3, ot4, on=['user_id'], how='left')
-o9.fillna(value=-1., inplace=True)
+o9.fillna(value=0., inplace=True)
 o9['off_buy_div_all_buy'] = o9.apply(lambda x: x.user_use_coupon / (x.user_use_coupon + x.user_buy_num), axis=1)
 o9 = o9[['user_id', 'off_buy_div_all_buy']]
 
@@ -240,7 +240,7 @@ ot5 = o2[['user_id', 'action']]
 ot5['on_get_coupon_num'] = ot5.action.apply(lambda x: [int(d) for d in x.split(':')].count(2))
 ot5 = ot5[['user_id', 'on_get_coupon_num']]
 o10 = pd.merge(u1, ot5, on=['user_id'], how='left')
-o10.fillna(value=-1., inplace=True)
+o10.fillna(value=0., inplace=True)
 o10['off_get_div_all_get'] = o10.apply(lambda x: x.user_get_coupon_num / (x.user_get_coupon_num + x.on_get_coupon_num), axis=1)
 o10 = o10[['user_id', 'off_get_div_all_get']]
 
@@ -277,7 +277,7 @@ m3 = m3.groupby('merchant_id')['merchant_got_and_use'].agg('sum').reset_index()
 
 # 商家优惠券被领取后核销率c4
 m4 = pd.merge(m1, m3, on=['merchant_id'])
-m4.fillna(value=-1., inplace=True)
+m4.fillna(value=0., inplace=True)
 m4['merchant_got_and_use_rate'] = m4.apply(lambda x: x.merchant_got_and_use / x.merchant_got, axis=1)
 m4 = m4[['merchant_id', 'merchant_got_and_use_rate']]
 
@@ -304,7 +304,7 @@ mt2['merchant_difft_user_get_num'] = 1
 mt2 = mt2.groupby('merchant_id')['merchant_difft_user_get_num'].agg('sum').reset_index()
 
 m6 = pd.merge(mt2, mt1, on=['merchant_id'])
-m6.fillna(value=-1, inplace=True)
+m6.fillna(value=0, inplace=True)
 m6['merchant_difft_user_use_rate'] = m6.apply(lambda x: x.merchant_difft_user_use_num / x.merchant_difft_user_get_num, axis=1)
 m6 = m6[['merchant_id', 'merchant_difft_user_use_rate']]
 
@@ -333,7 +333,7 @@ mt2['merchant_difft_coupon_got'] = 1
 mt2 = mt2.groupby('merchant_id')['merchant_difft_coupon_got'].agg('sum').reset_index()
 
 m9 = pd.merge(mt2, m8, on=['merchant_id'])
-m9.fillna(value=-1, inplace=True)
+m9.fillna(value=0, inplace=True)
 m9['merchant_difft_coupon_rate'] = m9.apply(lambda x: x.merchant_difft_coupon_used / x.merchant_difft_coupon_got, axis=1)
 m9 = m9[['merchant_id', 'merchant_difft_coupon_rate']]
 
@@ -461,22 +461,22 @@ c7 = c7.groupby('coupon_id')['coupon_use_gap_time'].agg(lambda x: ':'.join(x)).r
 c7['coupon_avg_use_gap_time'] = c7.coupon_use_gap_time.apply(lambda x: sum([int(d) for d in x.split(':')]) / len(x.split(':')))
 c7 = c7[['coupon_id', 'coupon_avg_use_gap_time']]
 
-
-# 领取优惠券是一周的第几天c8
-c8 = feature1[(feature1.coupon_id != 'null')]
-c8['coupon_got_is_week'] = c8.date_received.apply(lambda x: datetime.datetime(int(x[0:4]),int(x[4:6]),int(x[6:8])).isoweekday())
-
-
-# 领取优惠券是一月的第几天c9
-c8['coupon_got_is_month_day'] = c8.date_received.apply(lambda x: int(x[6:8]))
-c8 = c8[['coupon_id', 'coupon_got_is_week', 'coupon_got_is_month_day']]
-
 c1 = c1[['coupon_id', 'coupon_type', 'coupon_rate', 'coupn_lowest_gp', 'coupon_come_up', 'coupon_got_used', 'coupon_got_used_rate']]
 
 m_cr = pd.merge(c1, c7, on=['coupon_id'], how='left')
-m_cr = pd.merge(m_cr, c8, on=['coupon_id'], how='left')
+
 m_cr.fillna(value=-1., inplace=True)
 m_cr.to_csv('data/coupon_feature1.csv',index=None)
+
+# 领取优惠券是一周的第几天c8
+# c8 = feature1[(feature1.coupon_id != 'null')]
+# c8['coupon_got_is_week'] = c8.date_received.apply(lambda x: datetime.datetime(int(x[0:4]),int(x[4:6]),int(x[6:8])).isoweekday())
+#
+#
+# # 领取优惠券是一月的第几天c9
+# c8['coupon_got_is_month_day'] = c8.date_received.apply(lambda x: int(x[6:8]))
+# c8 = c8[['coupon_id', 'coupon_got_is_week', 'coupon_got_is_month_day']]
+
 
 # 历史上用户领取该优惠券次数uc1
 uc1 = feature1[feature1.coupon_id != 'null']
@@ -491,3 +491,4 @@ uc1['uc_use_rate'] = uc1.apply(lambda x: x.uc_use / x.uc_got, axis=1)
 uc1 = uc1[['coupon_id', 'user_id', 'uc_got', 'uc_use', 'uc_use_rate']]
 
 uc1.to_csv('data/user_coupon_feature1.csv',index=None)
+
