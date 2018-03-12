@@ -1,4 +1,5 @@
 import csv
+from itertools import islice
 
 # 特征缩放
 
@@ -18,7 +19,7 @@ def get_mu_S(file_path):
         mu = [0. for _ in range(col_num)]
         S = [0. for _ in range(col_num)]
         max_V = [0. for _ in range(col_num)]
-        min_V = [10000000. for _ in range(col_num)]
+        min_V = [10000. for _ in range(col_num)]
         sum_V = [0. for _ in range(col_num)]
 
         for line in reader:
@@ -38,11 +39,11 @@ def get_mu_S(file_path):
         return mu, S
 
 
-file_path = '2nd-process/instance.csv'
+file_path = 'train_data/model_merge1.csv'
 mu, S = get_mu_S(file_path)
 with open(file_path, 'r') as fin:
     _, col_num = get_row_col_num(file_path)
-    with open('2nd-process/MN_data.csv', 'w', newline='') as fout:
+    with open('train_data/mn_model_merge1.csv', 'w', newline='') as fout:
         reader = csv.reader(fin)
         writer = csv.writer(fout)
         for row in reader:

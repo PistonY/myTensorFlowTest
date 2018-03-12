@@ -74,4 +74,4 @@ f_model_merge.fillna(value=-1., inplace=True)
 
 model_merge = pd.concat([t_model_merge, f_model_merge])
 model_merge = model_merge.sample(frac=1)
-model_merge.to_csv('train_data/model_merge1.csv',index=None)
+model_merge.to_csv('train_data/model_merge1.csv',index=None, header=None)

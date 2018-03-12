@@ -6,19 +6,19 @@ import tensorflow as tf
 def read_my_file_format(filename_queue):
     reader = tf.TextLineReader()
     key, record_string = reader.read(filename_queue)
-    defaults = [[0.], [1.], [10.], [0.]]
-    col1, col2, col3, col4 = tf.decode_csv(record_string, record_defaults=defaults)
-    features = tf.stack([col1, col2, col3])
-    # features = tf.stack(set_pdynome_degree(3, [col1, col2, col3]))
-    features = tf.reshape(features, [-1, 1])
-    lable = tf.stack([col4])
+    # defaults = [[0.], [1.], [10.], [0.]]
+    defaults = [[0.] for i in range(70)]
+    col = tf.decode_csv(record_string, record_defaults=defaults)
+    features = tf.stack(col[0: len(col) - 1])
+    # features = tf.reshape(features, [-1, 1])
+    lable = tf.stack([col[len(col) - 1]])
     return features, lable
 
 
 def input_pipeline(filenames, batch_size, num_epochs = None):
     filename_queue = tf.train.string_input_producer(filenames, num_epochs=num_epochs, shuffle=True)
     example, lable = read_my_file_format(filename_queue)
-    min_after_dequeue = 5000
+    min_after_dequeue = 1000
     capacity = min_after_dequeue + 3 * batch_size
     example_batch, lable_batch = tf.train.shuffle_batch(
         [example, lable], batch_size = batch_size, capacity=capacity,

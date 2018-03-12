@@ -5,8 +5,8 @@ import get_F1
 
 
 
-batch_size = 2000
-X, Y = proc_input.input_pipeline(['2nd-process/MN_data.csv'], batch_size)
+batch_size = 1000
+X, Y = proc_input.input_pipeline(['train_data/mn_model_merge1.csv'], batch_size)
 # x_cv, y_cv = proc_input.input_pipeline(['cross_data.csv'], batch_size)
 # x_test, y_test = proc_input.input_pipeline(['test_data.csv'], batch_size)
 
