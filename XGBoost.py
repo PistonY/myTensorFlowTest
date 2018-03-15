@@ -1,41 +1,74 @@
 import pandas as pd
 import xgboost as xgb
-from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 
-train = pd.read_csv('train_data/model_merge1.csv')
-tests = pd.read_csv('train_data/test_merge1.csv')
+train1 = pd.read_csv('train_data/train_set1.csv')
+test1 = pd.read_csv('train_data/test_merge1.csv')
+train2 = pd.read_csv('train_data/train_set2.csv')
+test2 = pd.read_csv('train_data/test_merge2.csv')
 
-train_xy, val = train_test_split(train, test_size=0.3, random_state=1)
-y = train_xy.lable
-X = train_xy.drop(['lable'], axis=1)
+train3 = pd.read_csv('train_data/train_set3.csv')
 
-val_y = val.lable
-val_X = val.drop(['lable'], axis=1)
+dataset = pd.read_csv('train_data/pred_merge.csv')
+dataset_preds = dataset[['user_id','coupon_id','date_received']]
+dataset_x = dataset.drop(['user_id','coupon_id','merchant_id', 'discount_rate', 'date_received',
+                          'all_merht_rate', 'all_coupon_rate'],axis=1)
 
-xgb_val = xgb.DMatrix(val_X, label=val_y)
+train = pd.concat([train1, train2], axis=0)
+tests = pd.concat([test1, test2], axis=0)
+
+train.drop_duplicates(inplace=True)
+tests.drop_duplicates(inplace=True)
+
+y = train.lable
+X = train.drop(['lable', 'all_merht_rate', 'all_coupon_rate', 'day_gap_before', 'day_gap_after'], axis=1)
+# X = X.iloc[:, :57]
+
+test_y = tests.lable
+test_X = tests.drop(['lable', 'all_merht_rate', 'all_coupon_rate', 'day_gap_before', 'day_gap_after'], axis=1)
+# test_X = test_X.iloc[:, :57]
+
 xgb_train = xgb.DMatrix(X, label=y)
-xgb_test = xgb.DMatrix(tests)
+xgb_test = xgb.DMatrix(test_X, label=test_y)
+dataset = xgb.DMatrix(dataset_x)
 
 params = {
     'booster': 'gbtree',
-    'objective': 'binary:logistic',
-    'gamma': 0.1,
+    'objective': 'rank:pairwise',
+    'eval_metric': 'auc',
+    'gamma': 0,
+    'min_child_weight': 1.1,
     'max_depth': 8,
-    'max_leaf_nodes': 10,
-    'scale_pos_weight': 1,
-    'lambda': 2,
-    'subsample': 0.7,
-    'colsample_bytree': 0.7,
-    'min_child_weight': 3,
-    'silent': 0,
-    'eta': 0.02,
-    'eval_metric': 'auc'
+    'lambda': 50,
+    'base_score': 0.11,
+    'min_child_weight': 100,
+    'kvDelimiter': ':',
+    'subsample': 0.4,
+    'colsample_bytree': 0.6,
+    'colsample_bylevel': 0.7,
+    'eta': 0.08,
+    'tree_method': 'exact',
+    'nthread': 12
 }
 
-plst = list(params.items())
-num_rounds = 5000
-watchlist = [(xgb_train, 'train'),(xgb_val, 'val')]
-model = xgb.train(plst, xgb_train, num_rounds, watchlist,early_stopping_rounds=100)
-model.save_model('models/xgb.model')
+num_rounds = 2000
+watchlist = [(xgb_train, 'train'), (xgb_test, 'test')]
+model = xgb.train(params, xgb_train, num_rounds, watchlist)
 
-print("best best_ntree_limit",model.best_ntree_limit)
+# dataset_preds['label'] = model.predict(dataset)
+# dataset_preds.label = MinMaxScaler().fit_transform(dataset_preds.label.reshape(-1, 1))
+# dataset_preds.sort_values(by=['coupon_id','label'],inplace=True)
+# dataset_preds.to_csv("predData/xgb_preds.csv",index=None,header=None)
+
+feature_score = model.get_fscore()
+feature_score = sorted(feature_score.items(), key=lambda x:x[1],reverse=True)
+fs = []
+for (key, value) in feature_score:
+    fs.append("{0},{1}\n".format(key, value))
+
+with open('predData/xgb_feature_score.csv', 'w') as f:
+    f.writelines("feature,score\n")
+    f.writelines(fs)
+
+
